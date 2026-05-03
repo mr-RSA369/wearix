@@ -10,34 +10,50 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      sqlite:
-        image: nouchka/sqlite3
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ✅ PHP setup
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
           extensions: mbstring, bcmath, pdo, sqlite
 
+      # ✅ Node setup (IMPORTANT)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # ✅ Environment
       - name: Copy .env
         run: cp .env.example .env
 
+      # ✅ Composer
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
+      # ✅ App key BEFORE build
+      - name: Generate key
+        run: php artisan key:generate
+
+      # ✅ Clear config (important for CI)
+      - name: Clear cache
+        run: php artisan config:clear
+
+      # ✅ NPM
       - name: Install NPM dependencies
         run: npm install
 
       - name: Build frontend
         run: npm run build
 
-      - name: Generate key
-        run: php artisan key:generate
+      # ✅ Ensure build exists (debug step)
+      - name: Check build output
+        run: ls -la public/build
 
+      # ✅ Run tests
       - name: Run tests
         run: php artisan test
